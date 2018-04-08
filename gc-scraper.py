@@ -12,6 +12,7 @@ import cookielib
 import re
 import os
 import glob
+from time import gmtime, strftime
 from random import randint
 from time import sleep
 from bs4 import BeautifulSoup
@@ -63,6 +64,7 @@ for filename in glob.iglob('./*.gpx'):
   if "CORRECTED" not in filename:
     xmlfile = filename
     wpts = dict()
+    corrected = dict()
 
     if xmlfile.rsplit(".")[-1] != "gpx":
       print("ERROR - Filename must have a .gpx extension!")
@@ -112,23 +114,33 @@ for filename in glob.iglob('./*.gpx'):
           # status += "URL = {0} \n".format(url)
 
           wpts[old] = '<wpt lat="{0}" lon="{1}">'.format(lt, ln)
+
+          # Make a whole new waypoint...
+          now = strftime("%Y-%m-%dT%H:%M:%S%z", gmtime())
+          corrected[nMod] = { 'wpt': code, 'lat': lt, 'lon': ln, 'time': now }
           nMod += 1
 
-          s = randint(5, 20)
+          s = randint(30, 60)
           print("...sleeping for {} seconds...".format(s))
-          sleep(s)     # random sleep...from 5 to 20 seconds
+          sleep(s)     # random sleep...from 30 to 60 seconds
 
       status += "\nDone scraping.  Found {0} WPT tags and {1} FN values to modify.\n\n".format(nFound, nMod)
       print(status)
 
       head, tail = os.path.split(xmlfile)
-      output = "{0}/CORRECTED_{1}".format(head, tail)
+      # output = "{0}/CORRECTED_{1}".format(head, tail)
+      output = "/tmp/CORRECTED_Coordinates.gpx"
 
       with open(xmlfile, 'r') as in_file:
         text = in_file.read()
 
-      with open(output, 'w') as out_file:
-        out_file.write(replace_all(text, wpts))
+      # with open(output, 'w') as out_file:
+      #   out_file.write(replace_all(text, wpts))
+
+      with open(output, 'w+') as out_file:
+        for c in corrected:
+          block = '<wpt lat="{0}" lon="{1}">\n  <time>{2}</time>\n  <name>{3}</name\n  <urlname>Coordinate Override</urlname>\n  <desc>Coordinate Override</desc>\n  <type>Waypoint</type>\n</wpt>'.format(c.lat, c.lon, c.time, c.wpt)
+          out_file.write(block)
 
       print("Done with substitutions.  Your modified WPTs are now in '{0}'.\n".format(output))
 
