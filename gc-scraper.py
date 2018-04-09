@@ -9,10 +9,10 @@ No GUI, so this thing is Docker-compatible.
 import string
 import mechanize
 import cookielib
-import re
 import os
+import re
 import glob
-from time import gmtime, strftime
+# from time import gmtime, strftime
 from random import randint
 from time import sleep
 from bs4 import BeautifulSoup
@@ -64,7 +64,7 @@ for filename in glob.iglob('./*.gpx'):
   if "CORRECTED" not in filename:
     xmlfile = filename
     wpts = dict()
-    corrected = dict()
+    blocks = []
 
     if xmlfile.rsplit(".")[-1] != "gpx":
       print("ERROR - Filename must have a .gpx extension!")
@@ -116,31 +116,32 @@ for filename in glob.iglob('./*.gpx'):
           wpts[old] = '<wpt lat="{0}" lon="{1}">'.format(lt, ln)
 
           # Make a whole new waypoint...
-          now = strftime("%Y-%m-%dT%H:%M:%S%z", gmtime())
-          corrected[nMod] = { 'wpt': code, 'lat': lt, 'lon': ln, 'time': now }
+          # now = strftime("%Y-%m-%dT%H:%M:%S%z", gmtime())
+#         blocks.append('<wpt lat="{0}" lon="{1}">\n  <time>{2}</time>\n  <name>{3}</name\n  <urlname>Coordinate Override</urlname>\n  <desc>Coordinate Override</desc>\n  <type>Waypoint</type>\n</wpt>\n'.format(lt, ln, now, code))
+#         blocks.append('<wpt lat="{0}" lon="{1}">\n  <name>{2}</name\n  <urlname>Coordinate Override</urlname>\n  <type>Waypoint</type>\n  <gsak:wptExtension xmlns:gsak="http://www.gsak.net/xmlv1/6">\n    <gsak:Parent>{2}</gsak:Parent>\n  </gsak:wptExtension>\n</wpt>\n'.format(lt, ln, code))
           nMod += 1
 
-          s = randint(30, 60)
+          s = randint(3, 10)
           print("...sleeping for {} seconds...".format(s))
-          sleep(s)     # random sleep...from 30 to 60 seconds
+          sleep(s)     # random sleep...from 3 to 10 seconds
 
       status += "\nDone scraping.  Found {0} WPT tags and {1} FN values to modify.\n\n".format(nFound, nMod)
       print(status)
 
       head, tail = os.path.split(xmlfile)
-      # output = "{0}/CORRECTED_{1}".format(head, tail)
-      output = "/tmp/CORRECTED_Coordinates.gpx"
+      output = "{0}/CORRECTED_{1}".format(head, tail)
+
+      # output = "/tmp/CORRECTED_Coordinates.gpx"
 
       with open(xmlfile, 'r') as in_file:
         text = in_file.read()
 
-      # with open(output, 'w') as out_file:
-      #   out_file.write(replace_all(text, wpts))
+      with open(output, 'w') as out_file:
+        out_file.write(replace_all(text, wpts))
 
-      with open(output, 'w+') as out_file:
-        for c in corrected:
-          block = '<wpt lat="{0}" lon="{1}">\n  <time>{2}</time>\n  <name>{3}</name\n  <urlname>Coordinate Override</urlname>\n  <desc>Coordinate Override</desc>\n  <type>Waypoint</type>\n</wpt>'.format(c.lat, c.lon, c.time, c.wpt)
-          out_file.write(block)
+      # with open(output, 'w+') as out_file:
+      #   for b in blocks:
+      #     out_file.write(b)
 
       print("Done with substitutions.  Your modified WPTs are now in '{0}'.\n".format(output))
 
